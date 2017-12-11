@@ -82,7 +82,7 @@ if [ "$DEVEL_VERSION" = "devel" ] ; then
   fi
 fi
 
-if [ "$PROJECT" == "imx6" -a -n "$SYSTEM" ]; then
+if [ "$PROJECT" == "imx6" -o "$PROJECT" == "H3" ] && [ -n "$SYSTEM" ]; then
   IMAGE_NAME="$IMAGE_NAME-$SYSTEM"
 fi
 
@@ -225,6 +225,21 @@ if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem" ]; th
   done
 fi
 
+# copy vendor project related files to filesystem
+  if [ -d "$HOME/.libreelec/projects/$PROJECT/filesystem" ]; then
+    cp -PR $HOME/.libreelec/projects/$PROJECT/filesystem/* $INSTALL
+    # install project specific systemd services
+    for service in $HOME/.libreelec/projects/$PROJECT/filesystem/usr/lib/systemd/system/*.service ; do
+      if [ -f "$service" ] ; then
+        enable_service $(basename $service)
+      fi
+    done
+  fi
+
+
+
+
+
 # run depmod
 MODVER=$(basename $(ls -d $INSTALL/usr/lib/modules/*))
 find $INSTALL/usr/lib/modules/$MODVER/ -name *.ko | \
@@ -286,7 +301,42 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
     elif [ -f $BOOTLOADER_DIR/release ]; then
       . $BOOTLOADER_DIR/release
     fi
+    
+    
+    #AGGIUNTA
+    
+    if [ -z "$BOOTLOADER_DIR" -a -d $HOME/.libreelec/projects/$PROJECT/packages ]; then
+            BOOTLOADER_DIR=`find $HOME/.libreelec/projects/$PROJECT/packages -type d -name $BOOTLOADER 2>/dev/null`
+          fi
+
+          if [ -z "$BOOTLOADER_DIR" -a -d $HOME/.libreelec/packages ]; then
+            BOOTLOADER_DIR=`find $HOME/.libreelec/packages -type d -name $BOOTLOADER 2>/dev/null`
+          fi
+
+          if [ -z "$BOOTLOADER_DIR" -a -d $PROJECT_DIR/$PROJECT/packages ]; then
+            BOOTLOADER_DIR=`find $PROJECT_DIR/$PROJECT/packages -type d -name $BOOTLOADER 2>/dev/null`
+          fi
+
+          if [ -z "$BOOTLOADER_DIR" -o ! -d "$BOOTLOADER_DIR" ]; then
+            BOOTLOADER_DIR=`find $PACKAGES -type d -name $BOOTLOADER 2>/dev/null`
+          fi
+
+          if [ -d "$BOOTLOADER_DIR"/files ]; then
+            cp -R $BOOTLOADER_DIR/files/* $RELEASE_DIR
+          fi
+
+          if [ -f $HOME/.libreelec/projects/$PROJECT/bootloader/release ]; then
+            . $HOME/.libreelec/projects/$PROJECT/bootloader/release
+          elif [ -f $HOME/.libreelec/bootloader/release ]; then
+            . $HOME/.libreelec/bootloader/release
+          elif [ -f $PROJECT_DIR/$PROJECT/bootloader/release ]; then
+            . $PROJECT_DIR/$PROJECT/bootloader/release
+          elif [ -f "$BOOTLOADER_DIR"/release ]; then
+            . $BOOTLOADER_DIR/release
+          fi
   fi
+  
+  
 
   # MfgTool2 for TBS Matrix support (add it to .tar)
   # only for matrix system or all? (one tar for all updates?)
@@ -339,6 +389,12 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
         UBOOT_SYSTEM="$SYSTEM"
       else
         UBOOT_SYSTEM="cuboxi"
+      fi
+    elif [ "$PROJECT" == "H3" ]; then
+      if [ -n "$SYSTEM" ]; then
+        UBOOT_SYSTEM="$SYSTEM"
+      else
+        UBOOT_SYSTEM="opi2"
       fi
     fi
 

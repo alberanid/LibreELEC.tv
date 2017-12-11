@@ -58,6 +58,11 @@ case "$LINUX" in
     PKG_SOURCE_DIR="xbian-sources-kernel-${PKG_COMMIT}*"
     PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET imx6-status-led imx6-soc-fan irqbalanced"
     ;;
+   sun8i)
+    PKG_VERSION="5ea667f"
+    PKG_URL="https://github.com/jernejsk/linux/archive/$PKG_VERSION.tar.gz"
+    PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET sunxi-tools:host sunxi-sys-utils"
+    ;;       
   *)
     PKG_VERSION="4.9.20"
     PKG_URL="http://www.kernel.org/pub/linux/kernel/v4.x/$PKG_NAME-$PKG_VERSION.tar.xz"
@@ -177,6 +182,12 @@ make_target() {
   LDFLAGS="" make INSTALL_MOD_PATH=$INSTALL/usr DEPMOD="$ROOT/$TOOLCHAIN/bin/depmod" modules_install
   rm -f $INSTALL/usr/lib/modules/*/build
   rm -f $INSTALL/usr/lib/modules/*/source
+  if [ "$LINUX" = "sun8i" ]; then
+    for all_fex in $PROJECT_DIR/$PROJECT/sys_config/*.fex; do
+      fex=$(basename $all_fex)
+      fex2bin $all_fex $fex
+    done
+  fi
 
   ( cd $ROOT
     rm -rf $ROOT/$BUILD/initramfs
@@ -203,6 +214,9 @@ makeinstall_target() {
     mkdir -p $INSTALL/usr/share/bootloader
     for dtb in arch/$TARGET_KERNEL_ARCH/boot/dts/*.dtb; do
       cp $dtb $INSTALL/usr/share/bootloader 2>/dev/null || :
+    done
+    for fex in *.fex; do
+      cp $fex $INSTALL/usr/share/bootloader 2>/dev/null || :
     done
     if [ -d arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic -a -f "arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/$KERNEL_UBOOT_EXTRA_TARGET" ]; then
       cp "arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/$KERNEL_UBOOT_EXTRA_TARGET" $INSTALL/usr/share/bootloader/dtb.img 2>/dev/null || :

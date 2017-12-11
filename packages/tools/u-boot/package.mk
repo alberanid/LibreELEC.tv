@@ -31,6 +31,10 @@ elif [ "$UBOOT_VERSION" = "hardkernel" ]; then
   PKG_SITE="https://github.com/hardkernel/u-boot"
   PKG_URL="https://github.com/hardkernel/u-boot/archive/$PKG_VERSION.tar.gz"
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET gcc-linaro-aarch64-elf:host gcc-linaro-arm-eabi:host"
+elif [ "$UBOOT_VERSION" = "sunxi" ]; then
+  PKG_VERSION="2017.01"
+  PKG_SITE="http://www.denx.de/wiki/U-Boot/WebHome"
+  PKG_URL="ftp://ftp.denx.de/pub/u-boot/$PKG_NAME-$PKG_VERSION.tar.bz2"
 else
   exit 0
 fi
@@ -41,6 +45,9 @@ PKG_SHORTDESC="u-boot: Universal Bootloader project"
 PKG_LONGDESC="Das U-Boot is a cross-platform bootloader for embedded systems, used as the default boot loader by several board vendors. It is intended to be easy to port and to debug, and runs on many supported architectures, including PPC, ARM, MIPS, x86, m68k, NIOS, and Microblaze."
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
+if [ "$UBOOT_VERSION" = "sunxi" ]; then
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET Python:host"
+fi
 
 pre_configure_target() {
   if [ -z "$UBOOT_CONFIG" ]; then
@@ -59,7 +66,7 @@ pre_configure_target() {
   MAKEFLAGS=-j1
 
 # copy compiler-gcc5.h to compiler-gcc6. for fake building
-  cp include/linux/compiler-gcc5.h include/linux/compiler-gcc6.h
+#  cp include/linux/compiler-gcc5.h include/linux/compiler-gcc6.h
 }
 
 make_target() {
@@ -89,14 +96,44 @@ make_target() {
         TARGET_NAME="matrix"
       elif [ "$UBOOT_TARGET" = "udoo_config" ]; then
         TARGET_NAME="udoo"
+      elif [ "$UBOOT_TARGET" = "orangepi_2_defconfig" ]; then
+        TARGET_NAME="opi2"
+      elif [ "$UBOOT_TARGET" = "orangepi_pc_defconfig" ]; then
+        TARGET_NAME="opipc"
+      elif [ "$UBOOT_TARGET" = "orangepi_plus_defconfig" ]; then
+        TARGET_NAME="opiplus"
+      elif [ "$UBOOT_TARGET" = "orangepi_one_defconfig" ]; then
+        TARGET_NAME="opione"
+      elif [ "$UBOOT_TARGET" = "orangepi_lite_defconfig" ]; then
+        TARGET_NAME="opilite"
+      elif [ "$UBOOT_TARGET" = "Sinovoip_BPI_M2_plus_defconfig" ]; then
+        TARGET_NAME="bpim2p"
+      elif [ "$UBOOT_TARGET" = "orangepi_plus2e_defconfig" ]; then
+        TARGET_NAME="opiplus2e"
+      elif [ "$UBOOT_TARGET" = "orangepi_pc_plus_defconfig" ]; then
+        TARGET_NAME="opipcplus"
+      elif [ "$UBOOT_TARGET" = "Sinovoip_BPI_M3_defconfig" ]; then
+        TARGET_NAME="bpim3"
+      elif [ "$UBOOT_TARGET" = "beelink_x2_defconfig" ]; then
+        TARGET_NAME="bx2"  
       else
         TARGET_NAME="undef"
       fi
+      if [ -f "$PROJECT_DIR/$PROJECT/logo/splash-$TARGET_NAME.bmp" ]; then
+         LOGOIMG="$PROJECT_DIR/$PROJECT/logo/splash-$TARGET_NAME.bmp"
+      elif [ -f "$PROJECT_DIR/$PROJECT/logo/splash.bmp" ]; then
+         LOGOIMG="$PROJECT_DIR/$PROJECT/logo/splash.bmp"
+      fi
+      make CROSS_COMPILE="$TARGET_PREFIX" ARCH="$TARGET_ARCH" mrproper
+      make CROSS_COMPILE="$TARGET_PREFIX" ARCH="$TARGET_ARCH" $UBOOT_TARGET
+      make CROSS_COMPILE="$TARGET_PREFIX" ARCH="$TARGET_ARCH" HOSTCC="$HOST_CC" HOSTSTRIP="true" LOGO_BMP="$LOGOIMG"
 
       [ -f u-boot.img ] && mv u-boot.img u-boot-$TARGET_NAME.img || :
       [ -f u-boot.imx ] && mv u-boot.imx u-boot-$TARGET_NAME.imx || :
+      [ -f u-boot-sunxi-with-spl.bin ] && mv u-boot-sunxi-with-spl.bin uboot-sunxi-$TARGET_NAME.bin || :
       [ -f SPL ] && mv SPL SPL-$TARGET_NAME || :
     fi
+     [ -f u-boot-sunxi-with-spl.bin ] && mv u-boot-sunxi-with-spl.bin uboot-sunxi-bpim3.bin || :
   done
 }
 
@@ -123,7 +160,13 @@ makeinstall_target() {
   mkdir -p $INSTALL/usr/share/bootloader
 
   cp $ROOT/$PKG_BUILD/u-boot*.imx $INSTALL/usr/share/bootloader 2>/dev/null || :
+  
+  #NOTE: sunxi u-boot build folder contains intermediate .img files which are not needed
+  if [ -f ./uboot-sunxi-opi2.bin -o -f ./uboot-sunxi-bpim3.bin ]; then
+   cp ./uboot-sunxi-*.bin $INSTALL/usr/share/bootloader 2>/dev/null
+  else
   cp $ROOT/$PKG_BUILD/u-boot*.img $INSTALL/usr/share/bootloader 2>/dev/null || :
+  fi
   cp $ROOT/$PKG_BUILD/SPL* $INSTALL/usr/share/bootloader 2>/dev/null || :
 
   cp $ROOT/$PKG_BUILD/$UBOOT_CONFIGFILE $INSTALL/usr/share/bootloader 2>/dev/null || :
@@ -143,5 +186,8 @@ makeinstall_target() {
     imx6)
       cp -PRv $PKG_DIR/scripts/update.sh $INSTALL/usr/share/bootloader
       ;;
+     *)
+      cp -PRv $PKG_DIR/scripts/update.sh $INSTALL/usr/share/bootloader
+      ;;  
   esac
 }
