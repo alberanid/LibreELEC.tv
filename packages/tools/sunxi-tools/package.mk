@@ -17,7 +17,7 @@
 ################################################################################
 
 PKG_NAME="sunxi-tools"
-PKG_VERSION="b7e092e"
+PKG_VERSION="5c1971040c6c44caefb98e371bfca9e18d511da9"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
@@ -43,8 +43,8 @@ make_target() {
   make CC="$TARGET_CC" bin2fex
 }
 makeinstall_host() {
-  cp -PR fex2bin $ROOT/$TOOLCHAIN/bin/
-  cp -PR sunxi-fexc $ROOT/$TOOLCHAIN/bin/
+  cp -PR fex2bin $TOOLCHAIN/bin/
+  cp -PR sunxi-fexc $TOOLCHAIN/bin/
 }
 makeinstall_target() {
   mkdir -p $INSTALL/usr/bin
