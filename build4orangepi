@@ -1,0 +1,6 @@
+#!/bin/sh
+
+export SYSTEM="$1"
+
+make image
+
