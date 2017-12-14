@@ -3,10 +3,6 @@ FROM ubuntu:16.04
 LABEL \
 	maintainer="Davide Alberani <da@erlug.linux.it>"
 
-VOLUME \
-	./target:/home/orangepi/target \
-	./sources:/home/orangepi/sources
-
 RUN \
 	apt-get update && \
 	apt-get -y --no-install-recommends install \
@@ -15,6 +11,7 @@ RUN \
 		default-jre \
 		device-tree-compiler \
 		gawk \
+		git \
 		gperf \
 		libexpat1-dev \
 		libjson-perl \
@@ -33,9 +30,15 @@ RUN \
 
 RUN useradd -ms /bin/bash orangepi
 
-USER orangepi:orangepi
-
 COPY . /home/orangepi
+
+VOLUME \
+	/home/orangepi/target \
+	/home/orangepi/sources
+
+RUN chown -R orangepi:orangepi /home/orangepi
+
+USER orangepi:orangepi
 
 WORKDIR /home/orangepi
 
@@ -43,4 +46,4 @@ ENV \
 	ARCH=arm \
 	PROJECT=H3
 
-ENTRYPOINT ["./build4orangepi"]
+ENTRYPOINT ["./entrypoint.sh"]
