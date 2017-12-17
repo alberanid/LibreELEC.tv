@@ -4,6 +4,7 @@ This branch updates the material found in http://www.microdev.it/wp/en/2016/08/0
 
 All patches are already applied.
 
+**Please beware that this version has no hardware video acceleration, since Allwinner has never released their drivers**
 
 # How to compile
 
